@@ -1,4 +1,4 @@
-import org.gradle.api.publish.PublishingExtension
+import org.gradle.api.credentials.PasswordCredentials
 
 apply(from = "generate-metrics.gradle.kts")
 apply(from = "increment-version.gradle.kts")
@@ -6,25 +6,22 @@ apply(from = "increment-version.gradle.kts")
 plugins {
     `java-library`
     `maven-publish`
-    signing
 }
 
 allprojects {
-    group = "org.bstats"
+    group = "xyz.xenondevs.bstats"
 }
 
 configure<PublishingExtension> {
     subprojects {
-        val isReleaseVersion = !version.toString().endsWith("SNAPSHOT")
-
         apply(plugin = "java-library")
         apply(plugin = "maven-publish")
         apply(plugin = "signing")
-
+        
         publishing {
             publications {
                 create<MavenPublication>("mavenJava") {
-                    groupId = "org.bstats"
+                    groupId = "xyz.xenondevs.bstats"
                     afterEvaluate {
                         artifactId = "bstats-${project.name}"
                     }
@@ -39,11 +36,6 @@ configure<PublishingExtension> {
                                 url.set("https://opensource.org/licenses/mit-license.php")
                             }
                         }
-                        scm {
-                            connection.set("scm:git:https://github.com/Bastian/bStats-Metrics.git")
-                            developerConnection.set("scm:git:git@github.com:Bastian/bStats-Metrics.git")
-                            url.set("https://github.com/Bastian/bStats-Metrics")
-                        }
                         developers {
                             developer {
                                 id.set("Bastian")
@@ -56,28 +48,14 @@ configure<PublishingExtension> {
                     }
                 }
             }
-
+            
             repositories {
                 maven {
-                    name = "OSSRH"
-                    url = if (isReleaseVersion) {
-                        uri("https://oss.sonatype.org/service/local/staging/deploy/maven2/")
-                    } else {
-                        uri("https://oss.sonatype.org/content/repositories/snapshots/")
-                    }
-                    credentials {
-                        username = System.getenv("MAVEN_USERNAME")
-                        password = System.getenv("MAVEN_PASSWORD")
-                    }
+                    name = "xenondevs"
+                    url = uri("https://repo.xenondevs.xyz/releases/")
+                    credentials(PasswordCredentials::class)
                 }
             }
-        }
-
-        signing {
-            val signingKey = System.getenv("SIGNING_KEY")
-            val signingPassword = System.getenv("SIGNING_PASSWORD")
-            useInMemoryPgpKeys(signingKey, signingPassword)
-            sign(publishing.publications["mavenJava"])
         }
     }
 }
